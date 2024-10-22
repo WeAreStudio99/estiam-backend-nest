@@ -5,6 +5,8 @@ import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
+import { z, ZodSchema } from 'zod';
+import { fromError } from 'zod-validation-error';
 
 @Module({
   imports: [
@@ -21,13 +23,24 @@ import * as Joi from 'joi';
       }),
     }),
     ConfigModule.forRoot({
-      validationSchema: Joi.object({
-        POSTGRES_HOST: Joi.string().required(),
-        POSTGRES_PORT: Joi.number().required(),
-        POSTGRES_USER: Joi.string().required(),
-        POSTGRES_PASSWORD: Joi.string().required(),
-        POSTGRES_DB: Joi.string().required(),
-      }),
+      validate: (config: Record<string, unknown>) => {
+        try {
+          const parsedConfig = z
+            .object({
+              POSTGRES_HOST: z.string(),
+              POSTGRES_PORT: z.coerce.number().int(),
+              POSTGRES_USER: z.string(),
+              POSTGRES_PASSWORD: z.string(),
+              POSTGRES_DB: z.string(),
+            })
+            .parse(config);
+
+          return parsedConfig;
+        } catch (error) {
+          const formattedError = fromError(error);
+          throw new Error(formattedError.toString());
+        }
+      },
     }),
   ],
   controllers: [AppController],
