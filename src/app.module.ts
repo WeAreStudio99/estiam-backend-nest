@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { z, ZodSchema } from 'zod';
 import { fromError } from 'zod-validation-error';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { fromError } from 'zod-validation-error';
         }
       },
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,8 +1,5 @@
 import { z } from 'zod';
-
-const passwordValidation = new RegExp(
-  /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*\W)(?!.* ).{8,}$/,
-);
+import { passwordValidation } from './shared/user-validation';
 
 export const createUserSchema = z.object({
   username: z.string().min(1),

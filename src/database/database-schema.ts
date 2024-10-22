@@ -6,8 +6,8 @@ export const users = pgTable('users', {
   id: text()
     .primaryKey()
     .$defaultFn(() => createId()),
-  username: text('username').notNull().unique(),
-  password: text('password').notNull(),
+  username: text().notNull().unique(),
+  password: text().notNull(),
   ...timestamps,
 });
 

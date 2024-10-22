@@ -4,6 +4,7 @@ import { databaseSchema } from 'src/database/database-schema';
 import { eq, sql } from 'drizzle-orm';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
+import { hash } from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -19,7 +20,14 @@ export class UsersService {
       .returning()
       .prepare('create_user');
 
-    const user = await userQuery.execute(createUserDto);
+    const { password, ...createUserDtoWithoutPassword } = createUserDto;
+
+    const hashedPassword = await hash(password, 10);
+
+    const user = await userQuery.execute({
+      ...createUserDtoWithoutPassword,
+      password: hashedPassword,
+    });
 
     return user;
   }
@@ -45,6 +53,22 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    return user;
+  }
+
+  async findByUsername(username: string) {
+    const userQuery = this.drizzleService.db.query.users
+      .findFirst({
+        where: (user, { eq }) => eq(user.username, sql.placeholder('username')),
+      })
+      .prepare('find_user_by_username');
+
+    const user = await userQuery.execute({ username });
+
+    if (!user) {
+      throw new NotFoundException(`User with username ${username} not found`);
     }
 
     return user;
