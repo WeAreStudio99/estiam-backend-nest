@@ -4,34 +4,15 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { z } from 'zod';
-import { fromError } from 'zod-validation-error';
 import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './utils/roles/roles.guard';
 
 @Module({
   imports: [
     UsersModule,
     AuthModule,
-    ConfigModule.forRoot({
-      validate: (config: Record<string, unknown>) => {
-        try {
-          const parsedConfig = z
-            .object({
-              POSTGRES_HOST: z.string(),
-              POSTGRES_PORT: z.coerce.number().int(),
-              POSTGRES_USER: z.string(),
-              POSTGRES_PASSWORD: z.string(),
-              POSTGRES_DB: z.string(),
-            })
-            .parse(config);
-
-          return parsedConfig;
-        } catch (error) {
-          const formattedError = fromError(error);
-          throw new Error(formattedError.toString());
-        }
-      },
-    }),
+    ConfigModule.forRoot(),
     DatabaseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

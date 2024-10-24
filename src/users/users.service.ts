@@ -1,51 +1,79 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DrizzleService } from 'src/database/drizzle.service';
-import { databaseSchema } from 'src/database/database-schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, InferInsertModel, sql } from 'drizzle-orm';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { hash } from 'bcrypt';
+import { users } from 'src/database/database-schema';
+import { UserWithoutPasswordReturn } from './users-helpers';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly drizzleService: DrizzleService) {}
 
+  userWithtoutPasswordReturn: UserWithoutPasswordReturn<typeof users> = {
+    id: users.id,
+    username: users.username,
+    role: users.role,
+    updated_at: users.updated_at,
+    created_at: users.created_at,
+  };
+
   async create(createUserDto: CreateUserDTO) {
-    const userQuery = this.drizzleService.db
-      .insert(databaseSchema.users)
+    const usersQuery = this.drizzleService.db
+      .insert(users)
       .values({
         username: sql.placeholder('username'),
         password: sql.placeholder('password'),
       })
-      .returning()
+      .returning(this.userWithtoutPasswordReturn)
       .prepare('create_user');
 
     const { password, ...createUserDtoWithoutPassword } = createUserDto;
 
     const hashedPassword = await hash(password, 10);
 
-    const user = await userQuery.execute({
+    const userSelectPayload: InferInsertModel<typeof users> = {
       ...createUserDtoWithoutPassword,
       password: hashedPassword,
-    });
+    };
 
-    return user;
+    const createdUsers = await usersQuery
+      .execute(userSelectPayload)
+      .catch((err: any) => {
+        if ('code' in err && err.code === '23505') {
+          return new BadRequestException('Username already exists');
+        }
+
+        return new Error();
+      });
+
+    if (createdUsers instanceof Error) {
+      throw createdUsers;
+    }
+
+    return createdUsers[0];
   }
 
   async findAll() {
     const usersQuery = this.drizzleService.db.query.users
-      .findMany()
+      .findMany({ columns: { password: false } })
       .prepare('find_all_users');
 
-    const users = await usersQuery.execute();
+    const foundUsers = await usersQuery.execute();
 
-    return users;
+    return foundUsers;
   }
 
   async findOne(id: string) {
     const userQuery = this.drizzleService.db.query.users
       .findFirst({
-        where: (user, { eq }) => eq(user.id, sql.placeholder('id')),
+        where: eq(users.id, sql.placeholder('id')),
+        columns: { password: false },
       })
       .prepare('find_one_user');
 
@@ -61,7 +89,7 @@ export class UsersService {
   async findByUsername(username: string) {
     const userQuery = this.drizzleService.db.query.users
       .findFirst({
-        where: (user, { eq }) => eq(user.username, sql.placeholder('username')),
+        where: eq(users.username, sql.placeholder('username')),
       })
       .prepare('find_user_by_username');
 
@@ -76,34 +104,34 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDTO) {
     const usersQuery = this.drizzleService.db
-      .update(databaseSchema.users)
+      .update(users)
       .set({ ...updateUserDto, updated_at: new Date() })
-      .where(eq(databaseSchema.users.id, sql.placeholder('id')))
-      .returning()
+      .where(eq(users.id, sql.placeholder('id')))
+      .returning(this.userWithtoutPasswordReturn)
       .prepare('update_user');
 
-    const users = await usersQuery.execute({ id });
+    const updatedUsers = await usersQuery.execute({ id });
 
-    if (users.length === 0) {
+    if (updatedUsers.length === 0) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    return users[0];
+    return updatedUsers[0];
   }
 
   async remove(id: string) {
     const usersQuery = this.drizzleService.db
-      .delete(databaseSchema.users)
-      .where(eq(databaseSchema.users.id, sql.placeholder('id')))
-      .returning()
+      .delete(users)
+      .where(eq(users.id, sql.placeholder('id')))
+      .returning(this.userWithtoutPasswordReturn)
       .prepare('delete_user');
 
-    const users = await usersQuery.execute({ id });
+    const deletedUsers = await usersQuery.execute({ id });
 
-    if (users.length === 0) {
+    if (deletedUsers.length === 0) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    return users[0];
+    return deletedUsers[0];
   }
 }

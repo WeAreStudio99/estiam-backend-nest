@@ -12,6 +12,7 @@ import { UsersService } from './users.service';
 import { CreateUserDTO, createUserSchema } from './dto/create-user.dto';
 import { ZodValidationPipe } from 'src/utils/zod-validation';
 import { UpdateUserDTO, updateUserSchema } from './dto/update-user.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
