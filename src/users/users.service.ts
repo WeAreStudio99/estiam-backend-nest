@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { DrizzleService } from 'src/database/drizzle.service';
 import { eq, InferInsertModel, sql } from 'drizzle-orm';
@@ -10,6 +11,7 @@ import { UpdateUserDTO } from './dto/update-user.dto';
 import { hash } from 'bcrypt';
 import { users } from 'src/database/database-schema';
 import { UserWithoutPasswordReturn } from './users-helpers';
+import { JwtUser } from 'src/auth/strategies/jwt.strategy';
 
 @Injectable()
 export class UsersService {
@@ -69,7 +71,11 @@ export class UsersService {
     return foundUsers;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, reqUser: JwtUser) {
+    if (reqUser.role !== 'admin' && reqUser.id !== id) {
+      throw new UnauthorizedException('You can only see your data');
+    }
+
     const userQuery = this.drizzleService.db.query.users
       .findFirst({
         where: eq(users.id, sql.placeholder('id')),
@@ -102,7 +108,17 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDTO) {
+  async update(id: string, updateUserDto: UpdateUserDTO, reqUser: JwtUser) {
+    if (reqUser.role !== 'admin' && reqUser.id !== id) {
+      throw new UnauthorizedException('You can only update your data');
+    }
+
+    if (reqUser.role !== 'admin' && updateUserDto.role === 'admin') {
+      throw new UnauthorizedException(
+        `Only admin users can update the role property`,
+      );
+    }
+
     const usersQuery = this.drizzleService.db
       .update(users)
       .set({ ...updateUserDto, updated_at: new Date() })
@@ -119,7 +135,11 @@ export class UsersService {
     return updatedUsers[0];
   }
 
-  async remove(id: string) {
+  async remove(id: string, reqUser: JwtUser) {
+    if (reqUser.role !== 'admin' && reqUser.id !== id) {
+      throw new UnauthorizedException('You can only delete your data');
+    }
+
     const usersQuery = this.drizzleService.db
       .delete(users)
       .where(eq(users.id, sql.placeholder('id')))

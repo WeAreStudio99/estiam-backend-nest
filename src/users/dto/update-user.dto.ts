@@ -10,6 +10,7 @@ export const updateUserSchema = z.object({
         'Must contain at least 1 digit, 1 lowercase letter, 1 uppercase letter, 1 special character and be at least 8 characters long',
     })
     .optional(),
+  role: z.enum(['admin', 'user']).optional(),
 });
 
 export type UpdateUserDTO = z.infer<typeof updateUserSchema>;
