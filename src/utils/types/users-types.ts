@@ -1,10 +1,7 @@
 import { Column, InferSelectModel, Table, TableConfig } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
-import { Request } from 'express';
-import { JwtUser } from 'src/auth/strategies/jwt.strategy';
 
-export type UpsertReturn<
+export type UserWithoutPasswordReturn<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends Table<TableConfig<Column<any, object, object>>>,
 > = Partial<Record<keyof InferSelectModel<T>, PgColumn>>;
-
-export type JwtAuthenticatedRequest = Request & { user: JwtUser };

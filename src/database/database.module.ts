@@ -1,4 +1,6 @@
 import { Global, Module } from '@nestjs/common';
+import { Pool } from 'pg';
+
 import {
   ConfigurableDatabaseModule,
   CONNECTION_POOL,
@@ -6,7 +8,6 @@ import {
   DatabaseOptions,
 } from './database.module-definition';
 import { DrizzleService } from './drizzle.service';
-import { Pool } from 'pg';
 
 @Global()
 @Module({

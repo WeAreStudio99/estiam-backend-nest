@@ -4,14 +4,18 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { DrizzleService } from 'src/database/drizzle.service';
+import { hash } from 'bcrypt';
 import { eq, InferInsertModel, sql } from 'drizzle-orm';
+
+import { users } from '@database/database.schema';
+import { DrizzleService } from '@database/drizzle.service';
+
+import { isDBError } from '@utils/database-utils';
+import { JwtUser } from '@utils/types/auth-types';
+import { UserWithoutPasswordReturn } from '@utils/types/users-types';
+
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
-import { hash } from 'bcrypt';
-import { users } from 'src/database/database-schema';
-import { UserWithoutPasswordReturn } from './users-helpers';
-import { JwtUser } from 'src/auth/strategies/jwt.strategy';
 
 @Injectable()
 export class UsersService {
@@ -25,7 +29,7 @@ export class UsersService {
     created_at: users.created_at,
   };
 
-  async create(createUserDto: CreateUserDTO) {
+  async create(createUserDTO: CreateUserDTO) {
     const usersQuery = this.drizzleService.db
       .insert(users)
       .values({
@@ -35,19 +39,19 @@ export class UsersService {
       .returning(this.userWithtoutPasswordReturn)
       .prepare('create_user');
 
-    const { password, ...createUserDtoWithoutPassword } = createUserDto;
+    const { password, ...createUserDTOWithoutPassword } = createUserDTO;
 
     const hashedPassword = await hash(password, 10);
 
     const userSelectPayload: InferInsertModel<typeof users> = {
-      ...createUserDtoWithoutPassword,
+      ...createUserDTOWithoutPassword,
       password: hashedPassword,
     };
 
     const createdUsers = await usersQuery
       .execute(userSelectPayload)
-      .catch((err: any) => {
-        if ('code' in err && err.code === '23505') {
+      .catch((err) => {
+        if (isDBError(err) && err.code === '23505') {
           return new BadRequestException('Username already exists');
         }
 
@@ -108,12 +112,12 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDTO, reqUser: JwtUser) {
+  async update(id: string, updateUserDTO: UpdateUserDTO, reqUser: JwtUser) {
     if (reqUser.role !== 'admin' && reqUser.id !== id) {
       throw new UnauthorizedException('You can only update your data');
     }
 
-    if (reqUser.role !== 'admin' && updateUserDto.role === 'admin') {
+    if (reqUser.role !== 'admin' && updateUserDTO.role === 'admin') {
       throw new UnauthorizedException(
         `Only admin users can update the role property`,
       );
@@ -121,7 +125,7 @@ export class UsersService {
 
     const usersQuery = this.drizzleService.db
       .update(users)
-      .set({ ...updateUserDto, updated_at: new Date() })
+      .set({ ...updateUserDTO, updated_at: new Date() })
       .where(eq(users.id, sql.placeholder('id')))
       .returning(this.userWithtoutPasswordReturn)
       .prepare('update_user');

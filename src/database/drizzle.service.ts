@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Pool } from 'pg';
-import { CONNECTION_POOL } from './database.module-definition';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { users } from './database-schema';
+import { Pool } from 'pg';
+
+import { CONNECTION_POOL } from './database.module-definition';
+import { users } from './database.schema';
 
 const dbSchema = {
   users: users,

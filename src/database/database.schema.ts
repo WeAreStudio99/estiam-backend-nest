@@ -1,8 +1,12 @@
 import { createId } from '@paralleldrive/cuid2';
-import { text, pgTable, pgEnum } from 'drizzle-orm/pg-core';
-import { timestamps } from './database-helpers';
+import { text, pgTable, pgEnum, timestamp } from 'drizzle-orm/pg-core';
 
-export const userRoleEnum = pgEnum('role', ['admin', 'user']);
+export const timestamps = {
+  updated_at: timestamp(),
+  created_at: timestamp().defaultNow().notNull(),
+};
+
+const userRoleEnum = pgEnum('role', ['admin', 'user']);
 
 export const users = pgTable('users', {
   id: text()

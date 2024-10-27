@@ -10,15 +10,18 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+
+import { Roles } from '@utils/roles/roles.decorator';
+import { Role } from '@utils/roles/roles.enum';
+import { RolesGuard } from '@utils/roles/roles.guard';
+import { JwtAuthenticatedRequest } from '@utils/types/auth-types';
+import { ZodValidationPipe } from '@utils/validation/zod-validation.pipe';
+
 import { CreateUserDTO, createUserSchema } from './dto/create-user.dto';
-import { ZodValidationPipe } from 'src/utils/zod-validation';
 import { UpdateUserDTO, updateUserSchema } from './dto/update-user.dto';
-import { RolesGuard } from 'src/utils/roles/roles.guard';
-import { Roles } from 'src/utils/roles/roles.decorator';
-import { Role } from 'src/utils/roles/roles.enum';
-import { JwtAuthenticatedRequest } from 'src/utils/types';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
@@ -26,8 +29,8 @@ export class UsersController {
 
   @Post()
   @UsePipes(new ZodValidationPipe(createUserSchema))
-  create(@Body() createUserDto: CreateUserDTO) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createUserDTO: CreateUserDTO) {
+    return this.usersService.create(createUserDTO);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,10 +51,10 @@ export class UsersController {
   @UsePipes(new ZodValidationPipe(updateUserSchema))
   update(
     @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDTO,
+    @Body() updateUserDTO: UpdateUserDTO,
     @Req() req: JwtAuthenticatedRequest,
   ) {
-    return this.usersService.update(id, updateUserDto, req.user);
+    return this.usersService.update(id, updateUserDTO, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
