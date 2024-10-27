@@ -10,4 +10,9 @@ export const createUserSchema = z.object({
   }),
 });
 
-export type CreateUserDTO = z.infer<typeof createUserSchema>;
+export type CreateUserSchema = z.infer<typeof createUserSchema>;
+
+export class CreateUserDTO implements CreateUserSchema {
+  username: string;
+  password: string;
+}

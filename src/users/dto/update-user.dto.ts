@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { Role } from '@utils/roles/roles.enum';
+
 import { passwordValidation } from './shared/user-validation';
 
 export const updateUserSchema = z.object({
@@ -14,4 +16,10 @@ export const updateUserSchema = z.object({
   role: z.enum(['admin', 'user']).optional(),
 });
 
-export type UpdateUserDTO = z.infer<typeof updateUserSchema>;
+export type UpdateUserSchema = z.infer<typeof updateUserSchema>;
+
+export class UpdateUserDTO implements UpdateUserSchema {
+  username?: string;
+  password?: string;
+  role: Role;
+}

@@ -43,13 +43,13 @@ export class UsersService {
 
     const hashedPassword = await hash(password, 10);
 
-    const userSelectPayload: InferInsertModel<typeof users> = {
+    const createUserPayload: InferInsertModel<typeof users> = {
       ...createUserDTOWithoutPassword,
       password: hashedPassword,
     };
 
     const createdUsers = await usersQuery
-      .execute(userSelectPayload)
+      .execute(createUserPayload)
       .catch((err) => {
         if (isDBError(err) && err.code === '23505') {
           return new BadRequestException('Username already exists');
@@ -125,12 +125,38 @@ export class UsersService {
 
     const usersQuery = this.drizzleService.db
       .update(users)
-      .set({ ...updateUserDTO, updated_at: new Date() })
+      .set({
+        // @ts-expect-error TS bug see : https://github.com/drizzle-team/drizzle-orm/pull/1666
+        username: updateUserDTO.username
+          ? sql.placeholder('username')
+          : undefined,
+        // @ts-expect-error TS bug see : https://github.com/drizzle-team/drizzle-orm/pull/1666
+        password: updateUserDTO.password
+          ? sql.placeholder('password')
+          : undefined,
+        // @ts-expect-error TS bug see : https://github.com/drizzle-team/drizzle-orm/pull/1666
+        role: updateUserDTO.role ? sql.placeholder('role') : undefined,
+        updated_at: new Date(),
+      })
       .where(eq(users.id, sql.placeholder('id')))
       .returning(this.userWithtoutPasswordReturn)
       .prepare('update_user');
 
-    const updatedUsers = await usersQuery.execute({ id });
+    const { password, ...updateUserDTOWithoutPassword } = updateUserDTO;
+
+    let hashedPassword;
+
+    if (password) {
+      hashedPassword = await hash(password, 10);
+    }
+
+    const updateUserPayload: Partial<InferInsertModel<typeof users>> = {
+      ...updateUserDTOWithoutPassword,
+      password: hashedPassword,
+      id,
+    };
+
+    const updatedUsers = await usersQuery.execute(updateUserPayload);
 
     if (updatedUsers.length === 0) {
       throw new NotFoundException(`User with id ${id} not found`);
