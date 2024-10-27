@@ -1,7 +1,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import { text, pgTable, pgEnum, timestamp } from 'drizzle-orm/pg-core';
 
-export const timestamps = {
+const timestamps = {
   updated_at: timestamp(),
   created_at: timestamp().defaultNow().notNull(),
 };
