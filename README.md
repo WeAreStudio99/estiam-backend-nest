@@ -54,7 +54,13 @@ Initiate by setting up environment variables. Duplicate `.env.sample` as `.env.`
 cp .env.sample .env
 ```
 
-Amend `.env` with your specific configurations.
+and `docker.env.sample` as `docker.env`:
+
+```bash
+cp docker.env.sample docker.env`
+```
+
+Amend `.env` and `docker.env` with your specific configurations.
 
 ### Dependency Installation
 
