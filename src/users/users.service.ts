@@ -21,7 +21,7 @@ import { UpdateUserDTO } from './dto/update-user.dto';
 export class UsersService {
   constructor(private readonly drizzleService: DrizzleService) {}
 
-  userWithtoutPasswordReturn: UserWithoutPasswordReturn<typeof users> = {
+  userWithtoutPasswordReturn: UserWithoutPasswordReturn = {
     id: users.id,
     username: users.username,
     role: users.role,
